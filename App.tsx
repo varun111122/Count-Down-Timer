@@ -1,117 +1,174 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
   View,
+  TextInput,
+  Text,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  Keyboard,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+const App = () => {
+  const [seconds, setSeconds] = useState('');
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const timerRef = useRef(null);
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const handleInputChange = input => {
+    // Validate that the input is a number
+    if (/^\d{0,2}$/.test(input)) {
+      setSeconds(input);
+    }
   };
 
+  const startTimer = () => {
+    const time = parseInt(seconds, 10);
+    if (!isRunning && time > 0) {
+      setTimeLeft(time);
+      setIsRunning(true);
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prevTime => {
+          if (prevTime <= 1) {
+            clearInterval(timerRef.current);
+            setIsRunning(false);
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+    }
+  };
+
+  const stopTimer = () => {
+    if (isRunning) {
+      clearInterval(timerRef.current);
+      setIsRunning(false);
+    }
+  };
+
+  const resetTimer = () => {
+    clearInterval(timerRef.current);
+    setIsRunning(false);
+    setTimeLeft(parseInt(seconds, 10) || 0);
+  };
+
+  useEffect(() => {
+    return () => clearInterval(timerRef.current);
+  }, []);
+
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+    <SafeAreaView style={styles.safeArea}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          {/* MARK: TEXT FIELD FOR INPUT DATA*/}
+          <Text style={styles.inputTitle}>Input Seconds</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter seconds..."
+            keyboardType="numeric"
+            value={seconds}
+            onKeyPress={(event) => {
+                console.log(event, 'Event occured');
+            }}
+            onChangeText={handleInputChange}
+          />
+          {seconds ? (
+            <Text style={styles.output}>{seconds} seconds.</Text>
+          ) : null}
+          {/* MARK:BUTTON ACTIONS OF TIMER*/}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                {backgroundColor: 'rgba(113, 179, 100, 1.0)'},
+              ]}
+              onPress={startTimer}
+              activeOpacity={0.7}>
+              <Text style={styles.buttonText}>Start</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                {backgroundColor: 'rgba(201, 92, 84, 1.0)'},
+              ]}
+              onPress={stopTimer}
+              activeOpacity={0.7}>
+              <Text style={styles.buttonText}>Stop</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                {backgroundColor: 'rgba(230, 176, 94, 1.0)'},
+              ]}
+              onPress={resetTimer}
+              activeOpacity={0.7}>
+              <Text style={styles.buttonText}>Reset</Text>
+            </TouchableOpacity>
+          </View>
+          {/* --------DISPLAY TIMER-------- */}
+          <Text style={styles.timerText}>{timeLeft} seconds left</Text>
         </View>
-      </ScrollView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'black',
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  container: {
+    flex: 1,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    backgroundColor: 'white',
+    // justifyContent: 'center'
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  inputTitle: {
+    fontSize: 16,
+    fontWeight: 'medium',
+    color: 'black',
+    paddingBottom: 4,
   },
-  highlight: {
-    fontWeight: '700',
+  input: {
+    height: 40,
+    borderColor: 'black',
+    borderWidth: 0.5,
+    borderRadius: 12,
+    marginBottom: 12,
+    paddingHorizontal: 8,
+  },
+  output: {
+    textAlign: 'center',
+    fontSize: 14,
+    paddingBottom: 10,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 20,
+  },
+  button: {
+    borderRadius: 4,
+    flex: 0.33,
+    marginHorizontal: 4,
+    height: 45,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontWeight: 'bold',
+    color: 'white',
+    fontSize: 16,
+  },
+  timerText: {
+    textAlign: 'center',
+    fontSize: 26,
+    marginTop: 20,
   },
 });
 
